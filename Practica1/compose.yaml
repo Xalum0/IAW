@@ -1,0 +1,6 @@
+services:
+  apache:
+    build:
+      context: ./apache
+    ports:
+      - "8183:8183"
