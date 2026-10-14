@@ -15,7 +15,7 @@ COPY sites-available/ /etc/apache2/sites-available/
 COPY web/ /var/www/
 
 RUN a2dissite 000-default.conf \
-    && a2ensite 000-catchall.conf \
+    && a2ensite 000-inicial.conf \
     && a2ensite patchesmerch.conf \
     && a2ensite patchesguides.conf \
     && apache2ctl configtest
