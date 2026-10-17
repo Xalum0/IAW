@@ -44,7 +44,7 @@ proxy_set_header Host $host;
 
 Elegí una redirección `308` porque indica que es permanente y conserva el método de la petición.
 
-El certificado de laboratorio tiene `patchesmerch.local` como CN y los dos dominios como SAN. La clave del certificado es ECDSA sobre `secp384r1` (P-384). Es autofirmado, por eso usé `curl -k` y OpenSSL mostró el aviso de certificado autofirmado. La clave del certificado que inspeccioné es P-384; no deduzco la curva del certificado a partir de la clave temporal `X25519` de la conexión.
+El certificado de laboratorio tiene `patchesmerch.local` como CN y los dos dominios como SAN. Lo generé con una clave ECDSA de curva `secp384r1` (P-384). Como es autofirmado, usé `curl -k` para las pruebas; OpenSSL mostró el aviso correspondiente, aunque la conexión se estableció.
 
 En Nginx permití solo TLS 1.2 y TLS 1.3. Para TLS 1.2 configuré estas suites:
 
@@ -66,7 +66,7 @@ El HSTS tiene una duración de seis meses. `nosniff` evita que el navegador inte
 
 ## Límite de peticiones
 
-Usé el escenario de la práctica para elegir los valores: `3r/s` como ritmo sostenido y `burst=6` para aceptar un pico breve de hasta seis peticiones por segundo. La zona cuenta las peticiones por dirección IP. Con `nodelay`, las peticiones que caben en la ráfaga se atienden enseguida; al superar el límite, Nginx devuelve `429`.
+Usé el escenario de la práctica para elegir los valores: `3r/s` como ritmo sostenido y `burst=6` para aceptar un pico breve de hasta seis peticiones por segundo. La zona cuenta las peticiones por dirección IP. Con `nodelay`, las peticiones que caben en la ráfaga se atienden enseguida; al superar el límite, Nginx devuelve `429`. El escenario plantea un scraper con más de 20 peticiones por segundo: a 20 peticiones por segundo, supera en 17 el ritmo sostenido de 3, así que agota rápidamente la ráfaga de 6. En cambio, las seis peticiones por segundo del pico legítimo quedaron permitidas en mi prueba.
 
 ```nginx
 limit_req_zone $binary_remote_addr zone=patches_by_ip:12m rate=3r/s;
@@ -78,7 +78,14 @@ location / {
 }
 ```
 
-Probé primero seis peticiones separadas por `0.17` segundos. Las seis dieron `200`. Luego envié 30 seguidas con `bash prueba-rate.sh 30 0`: tardaron `0,327` segundos, unas 92 peticiones por segundo. Las primeras siete dieron `200` y las otras 23 dieron `429`. La primera petición más las seis de ráfaga explican esos siete `200` iniciales.
+Para repetir las pruebas usé estos comandos:
+
+```bash
+bash prueba-rate.sh 6 0.17
+time bash prueba-rate.sh 30 0
+```
+
+En la primera prueba envié seis peticiones separadas por `0.17` segundos y las seis dieron `200`. En la segunda envié 30 seguidas: tardaron `0,327` segundos, unas 92 peticiones por segundo. Las primeras siete dieron `200` y las otras 23 dieron `429`. En esa ráfaga, la primera petición más las seis de `burst` explican los siete `200` iniciales.
 
 ## Pruebas
 
