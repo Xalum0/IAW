@@ -1,0 +1,10 @@
+# Lo que NUNCA entra en Git (UD6, apartado 11.3). Va antes del primer «git add».
+servidor/radio.env
+*.key
+
+# Lo que genera el laboratorio: no es tuyo, cambia solo y no se corrige.
+logs/*
+!logs/.gitkeep
+copias/*
+!copias/.gitkeep
+__pycache__/

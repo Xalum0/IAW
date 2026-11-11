@@ -1,0 +1,106 @@
+name: iaw-p2-radio
+
+# Práctica 2 de IAW · Radio Marea: la web (PHP) y la API de podcasts (Python) detrás de un Nginx con HTTPS, y sus datos en MariaDB
+#
+#   cliente ──HTTPS──▶ nginx ──FastCGI──▶ php   (PHP-FPM: la web, bloque A) ───┐
+#                          └──HTTP /api/──▶ app (Gunicorn + Flask: la API, B) ──┼──▶ db (MariaDB 11.4: los datos, C)
+#                                          admin (mariadb, mysqldump: copias) ──┘    red «interna» (sin salida)
+#
+# Puertos de tu ordenador: 8091 (HTTP) y 8452 (HTTPS). No chocan con los laboratorios ni con las baterías.
+# No hace falta usar docker compose a mano: ./practica.sh lo hace por ti. Este fichero no se cambia.
+
+services:
+  nginx:
+    build: { context: docker, dockerfile: Dockerfile.nginx }
+    image: iaw-ud5-nginx
+    container_name: iawp2-nginx
+    command: ["/lab/arranque-nginx.sh"]
+    ports: ["8091:80", "8452:443"]
+    volumes:
+      - ./docker/arranque-nginx.sh:/lab/arranque-nginx.sh:ro
+      - ./servidor/nginx:/etc/nginx/sites-available      # radio.conf: bloques A y B
+      - ./web:/var/www/radio
+      - ./certs:/etc/ssl/lab:ro
+      - ./logs:/var/log/nginx
+    networks:
+      lab:
+        aliases: [radio.iaw.local]
+      interna: {}
+    depends_on: [php, app]
+
+  php:
+    build: { context: docker, dockerfile: Dockerfile.php }
+    image: iaw-ud6-php
+    container_name: iawp2-php
+    environment:
+      PHP_INI_SCAN_DIR: ":/etc/radio/php"                # además de los .ini de siempre, los de servidor/php (A2)
+    volumes:
+      - ./web:/var/www/radio
+      - ./servidor:/etc/radio:ro                         # radio.env y php/: fuera de la carpeta de la web
+      - ./logs:/var/log/radio
+    networks: [interna]
+    depends_on:
+      db: { condition: service_healthy }
+
+  app:
+    build: { context: docker, dockerfile: Dockerfile.app }
+    image: iaw-ud6-app
+    container_name: iawp2-app
+    command: ["/lab/arranque-app.sh"]
+    environment:
+      PYTHONDONTWRITEBYTECODE: "1"                       # que Python no deje carpetas __pycache__ en tus ficheros
+    volumes:
+      - ./docker/arranque-app.sh:/lab/arranque-app.sh:ro
+      - ./app:/srv/app
+      - ./servidor:/etc/radio:ro                         # radio.env y gunicorn.conf.py
+      - ./logs:/var/log/radio
+    networks: [interna]
+    depends_on:
+      db: { condition: service_healthy }
+
+  db:
+    image: mariadb:11.4
+    container_name: iawp2-db
+    environment:
+      MARIADB_ROOT_PASSWORD: raiz-de-la-practica         # solo para el laboratorio: en un servidor, nunca en un fichero así
+      MARIADB_DATABASE: radio
+    volumes:
+      - ./sql/01-radio.sql:/docker-entrypoint-initdb.d/01-radio.sql:ro   # la primera vez: la parrilla y los podcasts
+      - datos:/var/lib/mysql                             # los datos, en un volumen: sobreviven a ./practica.sh parar
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 3s
+      retries: 20
+    networks: [interna]                                  # la base de datos NO se ve desde fuera
+
+  admin:
+    build: { context: docker, dockerfile: Dockerfile.admin }
+    image: iaw-ud6-admin
+    container_name: iawp2-admin
+    command: ["sleep", "infinity"]
+    user: "${YO:-1000:1000}"                             # las copias son tuyas, no de root (./practica.sh pone tu usuario)
+    environment:
+      HOME: /tmp
+    working_dir: /srv/servidor
+    volumes:
+      - ./servidor:/srv/servidor
+      - ./copias:/copias
+    networks: [interna]
+    depends_on:
+      db: { condition: service_healthy }
+
+  cliente:                                               # «un oyente»: desde aquí se prueba como desde fuera
+    build: { context: docker, dockerfile: Dockerfile.nginx }   # la misma imagen que nginx: sin esto, Docker la busca en internet
+    image: iaw-ud5-nginx
+    container_name: iawp2-cliente
+    command: ["sleep", "infinity"]
+    networks: [lab]
+    depends_on: [nginx]
+
+volumes:
+  datos: {}
+
+networks:
+  lab: {}
+  interna:
+    internal: true

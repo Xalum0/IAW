@@ -1,0 +1,8 @@
+body { font-family: system-ui, sans-serif; max-width: 46rem; margin: 2rem auto; padding: 0 1rem; color: #202124; }
+header { border-bottom: 4px solid #34a853; margin-bottom: 1.5rem; }
+header small { color: #5f6368; font-size: .55em; }
+nav a { color: #188038; }
+table { border-collapse: collapse; width: 100%; } td, th { border-bottom: 1px solid #dadce0; padding: .4rem; text-align: left; }
+.directo { color: #d93025; font-weight: bold; }
+.nota { background: #e6f4ea; padding: .6rem 1rem; border-radius: 6px; }
+label { display: block; margin: .4rem 0; }

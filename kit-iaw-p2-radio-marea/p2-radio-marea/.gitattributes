@@ -1,0 +1,4 @@
+# Saltos de línea de Linux siempre, también si clonas el repositorio en Windows (si no, practica.sh y los .sh no arrancan)
+* text=auto eol=lf
+*.crt binary
+*.key binary

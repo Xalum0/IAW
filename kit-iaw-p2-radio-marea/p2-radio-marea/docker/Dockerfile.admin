@@ -1,0 +1,7 @@
+# UD6 — El ordenador del administrador: cliente de MariaDB (mariadb, mysqldump) y Git. IAW ASIR 2.º
+FROM debian:trixie-slim
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get update && apt-get install -y --no-install-recommends mariadb-client git nano less ca-certificates \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
+# Git: la rama principal se llama main, y sin avisos de «safe.directory» (la carpeta es tuya, no del contenedor)
+RUN git config --system init.defaultBranch main && git config --system safe.directory '*' && git config --system advice.defaultBranchName false
