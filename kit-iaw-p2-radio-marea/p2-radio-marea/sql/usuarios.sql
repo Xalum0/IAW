@@ -13,5 +13,5 @@ CREATE USER IF NOT EXISTS 'radio_web'@'%' IDENTIFIED BY 'web-de-la-marea-2026';
 GRANT SELECT ON radio.* TO 'radio_web'@'%';
 
 -- ✍️ C1.2 · root solo puede entrar desde el propio servidor de la base de datos.
-REVOKE ALL ON RADIO.* TO 'root'@'%';
+DROP USER 'root'@'%'; 
 
