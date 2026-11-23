@@ -15,7 +15,10 @@ const PARRILLA_DE_PRUEBA = [
 //         Cada programa, un array con las claves hora, nombre y locutor (las usan index.php y parrilla.php).
 function programas(string $dia): array
 {
-    return array_values(array_filter(PARRILLA_DE_PRUEBA, fn ($p) => $p['dia'] === $dia));
+    $st = conectar()->prepare('SELECT hora, nombre, locutor FROM programas WHERE dia LIKE ? ORDER BY hora');
+    $st->execute(['%' . $dia . '%']);
+    $resultado = $st->fetchAll();
+    return array_values(array_filter($resultado, fn ($p) => $p['dia'] === $dia));
 }
 
 // 👀 Para el pie de la parrilla: con qué usuario está conectada la web (o por qué no puede).
