@@ -26,7 +26,8 @@ PODCASTS_DE_PRUEBA = [
 # ✍️ C2 · La conexión con MariaDB (UD6, apartado 5.2): host, base, usuario y contraseña, del entorno (radio.env).
 #         Cada fila, un diccionario. Nada escrito a mano.
 def conectar():
-    raise RuntimeError("Sin hacer: conectar() (C2)")
+    return pymysql.connect(host=os.environ["DB_HOST"], database=os.environ["DB_NAME"], user=os.environ["DB_USER"], password=os.environ["DB_PASS"], charset="utf8mb4", cursorclass=pymysql.cursors.DictCursor,)
+    
 
 
 # ✍️ C3 · Los podcasts de la tabla podcasts, del más nuevo al más viejo, con id, titulo, programa y minutos.
@@ -86,6 +87,7 @@ def entrar():
 def estudio():
     # ✍️ B2 · El panel del estudio: solo para quien ha entrado (lleva la pulsera, es decir, «locutor» en la sesión).
     #         Sin pulsera: {"error": "Primero, POST /api/entrar"} con un 401. Ahora entra cualquiera.
+
     if "locutor" not in session:
         return jsonify({"error": "Primero, POST /api/entrar"}), 401
     return jsonify({"locutor": session.get("locutor"), "siguiente": "Noticias del puerto, a las 13:00"}), 200
